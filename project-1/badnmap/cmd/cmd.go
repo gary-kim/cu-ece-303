@@ -85,6 +85,10 @@ var Root = &cobra.Command{
 			<- sem
 			go testPort(addrStr, p, sem, &d)
 		}
+
+        for i := 0; i < parallel; i++ {
+            <- sem
+        }
 	},
 }
 
@@ -97,7 +101,7 @@ func init() {
 // testPort tests the given port on the given address
 func testPort(addr string, port int, sem chan bool, d *net.Dialer) {
 	defer func() {sem <- true}()
-	conn, err := net.Dial("tcp", addr + ":" + strconv.Itoa(port))
+	conn, err := d.Dial("tcp", addr + ":" + strconv.Itoa(port))
 	if err != nil {
 		return
 	}

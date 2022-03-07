@@ -14,12 +14,14 @@ import (
 #include <stdio.h>
 
 int getTTL(int fd) {
+    int on = 1;
     int val;
     socklen_t size = sizeof(val);
-    setsockopt(fd, IPPROTO_IP, IP_RECVTTL, &(int) {1}, sizeof(int));
+    setsockopt(fd, SOL_IP, IP_RECVTTL, &on, sizeof(on));
     printf("ERROR: %i\n", errno);
+    printf("INFO: %i, %i, %i\n", IPPROTO_TCP, IPPROTO_IP, on);
     errno = 0;
-    getsockopt(fd, IPPROTO_IP, IP_TTL, &val, &size);
+    getsockopt(fd, SOL_IP, IP_TTL, &val, &size);
     printf("ERROR: %i\n", errno);
     return val;
 }
@@ -35,7 +37,7 @@ import "C"
 
 func main() {
 //    taddr, err := net.ResolveTCPAddr("tcp", "nextnano.ee.cooper.edu:3389")
-    taddr, err := net.ResolveTCPAddr("tcp", "ice03.ee.cooper.edu:31415")
+    taddr, err := net.ResolveTCPAddr("tcp", "ee.cooper.edu:80")
     conn, err := net.DialTCP("tcp", nil, taddr)
     if err != nil {
         fmt.Println("ERROR 1: ", err)
