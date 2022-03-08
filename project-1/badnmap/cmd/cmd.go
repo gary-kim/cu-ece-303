@@ -40,7 +40,7 @@ var parallel int
 var Root = &cobra.Command{
 	Use:   "badnnmap (address)",
 	Short: "badnmap is a bad version of nmap",
-	Long: `badnmap will attempt to connect to various ports via tcp`,
+	Long:  `badnmap will attempt to connect to various ports via tcp`,
 	Run: func(command *cobra.Command, args []string) {
 		if len(args) < 1 {
 			_ = command.Usage()
@@ -55,7 +55,7 @@ var Root = &cobra.Command{
 
 		var ports []int
 		if portRangeStr == "" {
-			ports = makeRange(1, 65535)
+			ports = makeRange(0, 65535)
 		} else {
 			range1, err := strconv.Atoi(portRange[0])
 			if err != nil {
@@ -82,26 +82,26 @@ var Root = &cobra.Command{
 		}()
 
 		for _, p := range ports {
-			<- sem
+			<-sem
 			go testPort(addrStr, p, sem, &d)
 		}
 
-        for i := 0; i < parallel; i++ {
-            <- sem
-        }
+		for i := 0; i < parallel; i++ {
+			<-sem
+		}
 	},
 }
 
 func init() {
 	Root.PersistentFlags().StringVarP(&portRangeStr, "port", "p", "", "Indicates the ports to scan. Can be a range in the format 80:100 as well")
-	Root.PersistentFlags().DurationVarP(&timeout, "timeout", "t", 2000 * 1000 * 1000, "Timeout for tcp connection")
+	Root.PersistentFlags().DurationVarP(&timeout, "timeout", "t", 2000*1000*1000, "Timeout for tcp connection")
 	Root.PersistentFlags().IntVar(&parallel, "parallel", 10, "Number of parallel connections")
 }
 
 // testPort tests the given port on the given address
 func testPort(addr string, port int, sem chan bool, d *net.Dialer) {
-	defer func() {sem <- true}()
-	conn, err := d.Dial("tcp", addr + ":" + strconv.Itoa(port))
+	defer func() { sem <- true }()
+	conn, err := d.Dial("tcp", addr+":"+strconv.Itoa(port))
 	if err != nil {
 		return
 	}
@@ -166,9 +166,9 @@ func makeRange(min int, max int) (tr []int) {
 		max = tmp
 	}
 
-	tr = make([]int, max - min + 1)
+	tr = make([]int, max-min+1)
 	for i := min; i <= max; i++ {
-		tr[i - min] = i
+		tr[i-min] = i
 	}
 	return
 }
