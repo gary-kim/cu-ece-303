@@ -11,8 +11,6 @@ import hashlib
 from collections import Counter
 import time
 import struct
-import os
-import signal
 
 class Sender(object):
     data = []
@@ -56,7 +54,7 @@ class Sender(object):
         Splits the given data up into 1024 byte frames.
 
         The format of the frames will be as follows:
-        * 1-1006 bytes of data
+        * 1-1004 bytes of data
         * 2 byte for ACK num
         * 16 bytes for checksum
 
@@ -64,7 +62,7 @@ class Sender(object):
         :param data_bytes: the data to be sent
         :return: list of list of bytes to be sent as data to the receiver
         """
-        SIZE = 1006
+        SIZE = 1004
 
         # This section is stolen then modified from the `channelsimulator.py` file
         frames = list()
@@ -88,7 +86,7 @@ class Sender(object):
     def make_frame(self, ack_num, data):
         """
         This function creates a frame from a given ACK number and data.
-        The data should be 1006 bytes or less.
+        The data should be 1004 bytes or less.
 
         :param ack_num: the ACK number of this frame
         :param data: the data that should be in this frame
@@ -96,7 +94,7 @@ class Sender(object):
         """
         d = []
         d.extend(data)
-        d.extend(struct.pack("H", ack_num))
+        d.extend(struct.pack("I", ack_num))
         d.extend(hashlib.md5(bytes(bytearray(d))).digest()[:16])
         return d
 
@@ -116,6 +114,8 @@ class Sender(object):
                     self.simulator.u_send(bytearray(self.data[job[0]]))
                     self.logger.info("Sending data with ACK #{}".format(job[0]))
                     self.jobs.append((job[0], time.time() + 0.05))
+                else:
+                    time.sleep(self.jobs[0][1] - time.time())
             except socket.timeout:
                 pass
 
@@ -125,12 +125,12 @@ class Sender(object):
         """
         while True:
             raw_ack = self.simulator.u_receive()
-            if len(raw_ack) != 10:
-                self.logger.info("Recieved ACK that is not 10 bytes")
+            if len(raw_ack) != 20:
+                self.logger.info("Received ACK that is not 20 bytes")
                 continue
             ack = [0, 0, 0, 0, 0]
             for i in range(0, 5):
-                ack[i] = struct.unpack("H", bytes(bytearray(raw_ack[i * 2:(i * 2) + 2])))[0]
+                ack[i] = struct.unpack("I", bytes(bytearray(raw_ack[i * 4:(i * 4) + 4])))[0]
             data = Counter(ack).most_common()
             if data[0][1] < 3:  # The ACK seems quite corrupted. Let's just ignore it
                 self.logger.info("Ignoring very corrupted ACK")
@@ -169,5 +169,5 @@ class BogoSender(Sender):
 if __name__ == "__main__":
     # test out BogoSender
     DATA = bytearray(sys.stdin.read())
-    sndr = Sender()
+    sndr = Sender(debug_level=logging.FATAL)
     sndr.send(DATA)

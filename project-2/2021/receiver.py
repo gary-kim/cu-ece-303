@@ -30,7 +30,7 @@ class Receiver(object):
                 if data[0] == -1:
                     continue
                 tmp = []
-                ack_bytes = struct.pack("H", data[0])
+                ack_bytes = struct.pack("I", data[0])
                 for i in range(5):
                     tmp.extend(ack_bytes)
                 self.simulator.u_send(bytearray(tmp))  # send ACK
@@ -53,16 +53,16 @@ class Receiver(object):
         if len(frame) < 19:
             self.logger.info("Got frame that is below the minimum size of a frame. Ignoring")
             return -1, 0
-        data = frame[0:-18]
+        data = frame[0:-20]
         checked_data = frame[0:-16]
-        ack_num = frame[-18:-16]
+        ack_num = frame[-20:-16]
         checksum = frame[-16:]
 
         if not (bytes(bytearray(checksum)) == hashlib.md5(bytes(bytearray(checked_data))).digest()[:16]):
             self.logger.info("Received corrupted frame. Ignoring")
             return -1, 0
 
-        return struct.unpack("H", bytes(bytearray(ack_num)))[0], data
+        return struct.unpack("I", bytes(bytearray(ack_num)))[0], data
 
 
 class BogoReceiver(Receiver):
@@ -78,12 +78,12 @@ class BogoReceiver(Receiver):
                  data = self.simulator.u_receive()  # receive data
                  self.logger.info("Got data from socket: {}".format(
                      data.decode('ascii')))  # note that ASCII will only decode bytes in the range 0-127
-	         sys.stdout.write(data)
+                 sys.stdout.write(data)
                  self.simulator.u_send(BogoReceiver.ACK_DATA)  # send ACK
             except socket.timeout:
                 sys.exit()
 
+
 if __name__ == "__main__":
-    # test out BogoReceiver
-    rcvr = Receiver()
+    rcvr = Receiver(debug_level=logging.FATAL)
     rcvr.receive()
