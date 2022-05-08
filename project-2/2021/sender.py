@@ -126,7 +126,6 @@ class Sender(object):
         while True:
             raw_ack = self.simulator.u_receive()
             if len(raw_ack) != 10:
-                self.logger.info(raw_ack)
                 self.logger.info("Recieved ACK that is not 10 bytes")
                 continue
             ack = [0, 0, 0, 0, 0]
@@ -134,13 +133,11 @@ class Sender(object):
                 ack[i] = struct.unpack("H", bytes(bytearray(raw_ack[i * 2:(i * 2) + 2])))[0]
             data = Counter(ack).most_common()
             if data[0][1] < 3:  # The ACK seems quite corrupted. Let's just ignore it
-                self.logger.info(data)
                 self.logger.info("Ignoring very corrupted ACK")
                 continue
 
             if data[0][1] < 5:
-                self.logger.info(data)
-                self.logger.info("Recovered ACK")
+                self.logger.info("Recovered ACK #{}".format(data[0][0]))
 
             self.logger.info("Recieved ACK: {}".format(int(data[0][0])))
             if not self.acks[int(data[0][0])]:
