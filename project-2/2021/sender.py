@@ -43,10 +43,12 @@ class Sender(object):
         now = time.time()
         self.jobs.extend([(i, now) for i in range(ack_start, ack_start + num_frames)])
 
+        # Start sending thread.
         _send = threading.Thread(target=self._send)
         _send.daemon = True
         _send.start()
 
+        # Main thread becomes ACK receiving thread
         self.recv_ack()
 
     def split_data(self, ack_start, data_bytes):
@@ -77,7 +79,6 @@ class Sender(object):
 
     def make_frame(self, ack_num, data):
         d = []
-        assert(len(data) <= 1006)
         d.extend(data)
         d.extend(struct.pack("H", ack_num))
         d.extend(hashlib.md5(bytes(bytearray(d))).digest()[:16])
@@ -93,7 +94,7 @@ class Sender(object):
                     to_send = []
                     to_send.extend(self.data[job[0]])
                     self.simulator.u_send(bytearray(self.data[job[0]]))
-                    self.logger.info("SENDING {} with {}".format(job[0], self.data[job[0]]))
+                    self.logger.info("Sending data with ACK #{}".format(job[0]))
                     self.jobs.append((job[0], time.time() + 0.05))
             except socket.timeout:
                 pass
@@ -102,16 +103,23 @@ class Sender(object):
         while True:
             raw_ack = self.simulator.u_receive()
             if len(raw_ack) != 10:
+                self.logger.info(raw_ack)
                 self.logger.info("Recieved ACK that is not 10 bytes")
+                continue
             ack = [0, 0, 0, 0, 0]
             for i in range(0, 5):
-                ack[i] = struct.unpack("H", bytes(bytearray(raw_ack[i:i + 2])))[0]
+                ack[i] = struct.unpack("H", bytes(bytearray(raw_ack[i * 2:(i * 2) + 2])))[0]
             data = Counter(ack).most_common()
             if data[0][1] < 3:  # The ACK seems quite corrupted. Let's just ignore it
-                self.logger.debug("Ignoring very corrupted ACK")
+                self.logger.info(data)
+                self.logger.info("Ignoring very corrupted ACK")
                 continue
 
-            self.logger.debug("Recieved ACK: {}".format(int(data[0][0])))
+            if data[0][1] < 5:
+                self.logger.info(data)
+                self.logger.info("Recovered ACK")
+
+            self.logger.info("Recieved ACK: {}".format(int(data[0][0])))
             if not self.acks[int(data[0][0])]:
                 self.acks[int(data[0][0])] = True
                 self.num_acks = self.num_acks + 1

@@ -26,7 +26,6 @@ class Receiver(object):
         while True:
             try:
                 recv = self.simulator.u_receive()  # receive data
-                self.logger.debug("GOT DATA")
                 data = self.decode(recv)
                 if data[0] == -1:
                     continue
@@ -35,8 +34,7 @@ class Receiver(object):
                 for i in range(5):
                     tmp.extend(ack_bytes)
                 self.simulator.u_send(bytearray(tmp))  # send ACK
-                self.logger.info("Got data from socket: {}".format(
-                    str(bytearray(data[1]))))  # note that ASCII will only decode bytes in the range 0-127
+                self.logger.info("Got frame and sent ACK for ACK #{}".format(data[0]))
                 while len(self.data) <= data[0]:
                     self.data.append([])
                 self.data[data[0]] = str(bytearray(data[1]))
@@ -49,11 +47,9 @@ class Receiver(object):
     Returns a tuple of (ACK_NUM, DATA)
     Will be (-1, 0) if not recoverable
     """
-    def decode(self, raw_frame):
-        frame = []
-        frame.extend(raw_frame)
+    def decode(self, frame):
         if len(frame) < 19:
-            self.logger.debug("Got frame that is below the minimum size of a frame. Ignoring")
+            self.logger.info("Got frame that is below the minimum size of a frame. Ignoring")
             return -1, 0
         data = frame[0:-18]
         checked_data = frame[0:-16]
@@ -61,7 +57,7 @@ class Receiver(object):
         checksum = frame[-16:]
 
         if not (bytes(bytearray(checksum)) == hashlib.md5(bytes(bytearray(checked_data))).digest()[:16]):
-            self.logger.debug("Received corrupted frame. Ignoring")
+            self.logger.info("Received corrupted frame. Ignoring")
             return -1, 0
 
         return struct.unpack("H", bytes(bytearray(ack_num)))[0], data
