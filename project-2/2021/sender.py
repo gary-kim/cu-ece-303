@@ -55,7 +55,7 @@ class Sender(object):
 
         The format of the frames will be as follows:
         * 1-1004 bytes of data
-        * 2 byte for ACK num
+        * 4 bytes for ACK num
         * 16 bytes for checksum
 
         :param ack_start: the beginning ACK number
@@ -169,5 +169,5 @@ class BogoSender(Sender):
 if __name__ == "__main__":
     # test out BogoSender
     DATA = bytearray(sys.stdin.read())
-    sndr = Sender(debug_level=logging.FATAL)
+    sndr = Sender()
     sndr.send(DATA)

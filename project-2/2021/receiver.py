@@ -85,5 +85,5 @@ class BogoReceiver(Receiver):
 
 
 if __name__ == "__main__":
-    rcvr = Receiver(debug_level=logging.FATAL)
+    rcvr = Receiver()
     rcvr.receive()
