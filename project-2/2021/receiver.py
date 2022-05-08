@@ -43,11 +43,13 @@ class Receiver(object):
                 for d in self.data:
                     sys.stdout.write(d)
                 sys.exit()
-    """
-    Returns a tuple of (ACK_NUM, DATA)
-    Will be (-1, 0) if not recoverable
-    """
+
     def decode(self, frame):
+        """
+        Expects the raw frame data
+
+        :returns: Returns a tuple of (ACK_NUM, DATA). Will be (-1, 0) if not recoverable
+        """
         if len(frame) < 19:
             self.logger.info("Got frame that is below the minimum size of a frame. Ignoring")
             return -1, 0

@@ -52,10 +52,18 @@ class Sender(object):
         self.recv_ack()
 
     def split_data(self, ack_start, data_bytes):
-        # Format
-        # 1-1006 bytes of data
-        # 2 byte for ACK num
-        # 16 bytes for checksum
+        """
+        Splits the given data up into 1024 byte frames.
+
+        The format of the frames will be as follows:
+        * 1-1006 bytes of data
+        * 2 byte for ACK num
+        * 16 bytes for checksum
+
+        :param ack_start: the beginning ACK number
+        :param data_bytes: the data to be sent
+        :return: list of list of bytes to be sent as data to the receiver
+        """
         SIZE = 1006
 
         # This section is stolen then modified from the `channelsimulator.py` file
@@ -78,6 +86,14 @@ class Sender(object):
         return frames
 
     def make_frame(self, ack_num, data):
+        """
+        This function creates a frame from a given ACK number and data.
+        The data should be 1006 bytes or less.
+
+        :param ack_num: the ACK number of this frame
+        :param data: the data that should be in this frame
+        :return: list of bytes making up a 1024 byte frame
+        """
         d = []
         d.extend(data)
         d.extend(struct.pack("H", ack_num))
@@ -85,6 +101,10 @@ class Sender(object):
         return d
 
     def _send(self):
+        """
+        Function meant to be started on a separate thread
+        to handle sending data frames to the receiver.
+        """
         while True:
             try:
                 if self.jobs and self.jobs[0][1] < time.time():
@@ -100,6 +120,9 @@ class Sender(object):
                 pass
 
     def recv_ack(self):
+        """
+        Function for receiving ACKs from the receiver
+        """
         while True:
             raw_ack = self.simulator.u_receive()
             if len(raw_ack) != 10:
