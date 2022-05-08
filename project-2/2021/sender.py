@@ -12,6 +12,7 @@ from collections import Counter
 import time
 import struct
 
+
 class Sender(object):
 
     def __init__(self, inbound_port=50006, outbound_port=50005, timeout=10, debug_level=logging.INFO):
@@ -27,6 +28,7 @@ class Sender(object):
     def send(self, data):
         raise NotImplementedError("The base API class has no implementation. Please override and add your own.")
 
+
 class MySender(Sender):
     data = []
     acks = []
@@ -35,7 +37,8 @@ class MySender(Sender):
     num_jobs = 0
 
     def send(self, data):
-        self.logger.info("Sending on port: {} and waiting for ACK on port: {}".format(self.outbound_port, self.inbound_port))
+        self.logger.info(
+            "Sending on port: {} and waiting for ACK on port: {}".format(self.outbound_port, self.inbound_port))
 
         ack_start = len(self.data)
         d = self.split_data(0, data)
@@ -80,8 +83,8 @@ class MySender(Sender):
                 self.make_frame(
                     ack_start + i,
                     data_bytes[
-                    i * SIZE:
-                    i * SIZE + SIZE
+                        i * SIZE:
+                        i * SIZE + SIZE
                     ]
                 )
 
@@ -115,8 +118,6 @@ class MySender(Sender):
                         job = self.jobs.pop(0)
                         if self.acks[job[0]]:
                             continue
-                        to_send = []
-                        to_send.extend(self.data[job[0]])
                         self.simulator.u_send(bytearray(self.data[job[0]]))
                         self.logger.info("Sending data with ACK #{}".format(job[0]))
                         self.jobs.append((job[0], time.time() + 0.005))
@@ -162,7 +163,8 @@ class BogoSender(Sender):
         super(BogoSender, self).__init__()
 
     def send(self, data):
-        self.logger.info("Sending on port: {} and waiting for ACK on port: {}".format(self.outbound_port, self.inbound_port))
+        self.logger.info(
+            "Sending on port: {} and waiting for ACK on port: {}".format(self.outbound_port, self.inbound_port))
         while True:
             try:
                 self.simulator.u_send(data)  # send data
