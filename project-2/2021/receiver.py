@@ -9,8 +9,8 @@ import socket
 import hashlib
 import struct
 
+
 class Receiver(object):
-    data = []
 
     def __init__(self, inbound_port=50005, outbound_port=50006, timeout=10, debug_level=logging.INFO):
         self.logger = utils.Logger(self.__class__.__name__, debug_level)
@@ -21,6 +21,13 @@ class Receiver(object):
                                                            debug_level=debug_level)
         self.simulator.rcvr_setup(timeout)
         self.simulator.sndr_setup(timeout)
+
+    def receive(self):
+        raise NotImplementedError("The base API class has no implementation. Please override and add your own.")
+
+
+class MyReceiver(Receiver):
+    data = []
 
     def receive(self):
         while True:
@@ -72,18 +79,19 @@ class BogoReceiver(Receiver):
         super(BogoReceiver, self).__init__()
 
     def receive(self):
-        self.logger.info("Receiving on port: {} and replying with ACK on port: {}".format(self.inbound_port, self.outbound_port))
+        self.logger.info(
+            "Receiving on port: {} and replying with ACK on port: {}".format(self.inbound_port, self.outbound_port))
         while True:
             try:
-                 data = self.simulator.u_receive()  # receive data
-                 self.logger.info("Got data from socket: {}".format(
-                     data.decode('ascii')))  # note that ASCII will only decode bytes in the range 0-127
-                 sys.stdout.write(data)
-                 self.simulator.u_send(BogoReceiver.ACK_DATA)  # send ACK
+                data = self.simulator.u_receive()  # receive data
+                self.logger.info("Got data from socket: {}".format(
+                    data.decode('ascii')))  # note that ASCII will only decode bytes in the range 0-127
+                sys.stdout.write(data)
+                self.simulator.u_send(BogoReceiver.ACK_DATA)  # send ACK
             except socket.timeout:
                 sys.exit()
 
 
 if __name__ == "__main__":
-    rcvr = Receiver()
+    rcvr = MyReceiver()
     rcvr.receive()

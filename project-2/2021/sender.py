@@ -13,11 +13,6 @@ import time
 import struct
 
 class Sender(object):
-    data = []
-    acks = []
-    jobs = []
-    num_acks = 0
-    num_jobs = 0
 
     def __init__(self, inbound_port=50006, outbound_port=50005, timeout=10, debug_level=logging.INFO):
         self.logger = utils.Logger(self.__class__.__name__, debug_level)
@@ -28,6 +23,16 @@ class Sender(object):
                                                            debug_level=debug_level)
         self.simulator.sndr_setup(timeout)
         self.simulator.rcvr_setup(timeout)
+
+    def send(self, data):
+        raise NotImplementedError("The base API class has no implementation. Please override and add your own.")
+
+class MySender(Sender):
+    data = []
+    acks = []
+    jobs = []
+    num_acks = 0
+    num_jobs = 0
 
     def send(self, data):
         self.logger.info("Sending on port: {} and waiting for ACK on port: {}".format(self.outbound_port, self.inbound_port))
@@ -105,17 +110,20 @@ class Sender(object):
         """
         while True:
             try:
-                if self.jobs and self.jobs[0][1] < time.time():
-                    job = self.jobs.pop(0)
-                    if self.acks[job[0]]:
-                        continue
-                    to_send = []
-                    to_send.extend(self.data[job[0]])
-                    self.simulator.u_send(bytearray(self.data[job[0]]))
-                    self.logger.info("Sending data with ACK #{}".format(job[0]))
-                    self.jobs.append((job[0], time.time() + 0.05))
+                if self.jobs:
+                    if self.jobs[0][1] < time.time():
+                        job = self.jobs.pop(0)
+                        if self.acks[job[0]]:
+                            continue
+                        to_send = []
+                        to_send.extend(self.data[job[0]])
+                        self.simulator.u_send(bytearray(self.data[job[0]]))
+                        self.logger.info("Sending data with ACK #{}".format(job[0]))
+                        self.jobs.append((job[0], time.time() + 0.005))
+                    else:
+                        time.sleep(max(self.jobs[0][1] - time.time(), 0))
                 else:
-                    time.sleep(self.jobs[0][1] - time.time())
+                    sys.exit()
             except socket.timeout:
                 pass
 
@@ -169,5 +177,5 @@ class BogoSender(Sender):
 if __name__ == "__main__":
     # test out BogoSender
     DATA = bytearray(sys.stdin.read())
-    sndr = Sender()
+    sndr = MySender()
     sndr.send(DATA)
